@@ -4,8 +4,10 @@ from datetime import datetime
 import pytz
 import swisseph as swe
 
-
-swe.set_ephe_path(".")
+try:
+    swe.set_ephe_path("/usr/share/ephe")
+except:
+    swe.set_ephe_path(".")
 
 app = FastAPI()
 

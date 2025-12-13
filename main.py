@@ -9,25 +9,19 @@ app = FastAPI(
 )
 
 class BirthData(BaseModel):
-    date: str  # pvz. "1990-05-15"
-    time: str  # pvz. "14:30"
+    date: str  # "YYYY-MM-DD"
+    time: str  # "HH:MM"
     lat: float
     lon: float
     timezone: str = "Europe/Vilnius"
 
 @app.get("/")
 async def root():
-    return {
-        "message": "Sveiki atvykę į Astrology API! 🌟",
-        "docs": "/docs",
-        "redoc": "/redoc",
-        "health": "/health",
-        "calculate": "POST /calculate su JSON duomenimis"
-    }
+    return {"message": "Astrology API veikia! 🌟 Naudok /docs testavimui."}
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "service": "Astrology API", "version": "1.0"}
+    return {"status": "ok", "version": "1.0"}
 
 @app.post("/calculate")
 async def calculate(data: BirthData):
@@ -44,7 +38,6 @@ async def calculate(data: BirthData):
             tz_str=data.timezone
         )
 
-        # Planetos pasiekiamos tiesiogiai (be planets_list!)
         planets = {
             "Sun": {"sign": person.sun.sign, "degree": round(person.sun.abs_pos, 2)},
             "Moon": {"sign": person.moon.sign, "degree": round(person.moon.abs_pos, 2)},
@@ -66,4 +59,4 @@ async def calculate(data: BirthData):
         }
 
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Klaida skaičiuojant horoskopą: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Klaida skaičiuojant: {str(e)}")

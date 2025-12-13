@@ -32,6 +32,7 @@ async def health():
 
 # 3. /calculate – įsitikink, kad tikrai yra POST metodas
 @app.post("/calculate")
+@app.post("/calculate")
 async def calculate(data: BirthData):
     try:
         person = AstrologicalSubject(
@@ -46,34 +47,26 @@ async def calculate(data: BirthData):
             tz_str=data.timezone
         )
 
-        # Tiesioginis planetų pasiekimas (veikia naujausiose versijose)
+        # Planetos pasiekiamos tiesiogiai kaip atributai (naujausia kerykeion versija)
         planets = {
-            "Sun": {"sign": person.sun.sign, "degree": round(person.sun.abs_pos, 2), "house": person.sun.house},
-            "Moon": {"sign": person.moon.sign, "degree": round(person.moon.abs_pos, 2), "house": person.moon.house},
-            "Mercury": {"sign": person.mercury.sign, "degree": round(person.mercury.abs_pos, 2), "house": person.mercury.house},
-            "Venus": {"sign": person.venus.sign, "degree": round(person.venus.abs_pos, 2), "house": person.venus.house},
-            "Mars": {"sign": person.mars.sign, "degree": round(person.mars.abs_pos, 2), "house": person.mars.house},
-            "Jupiter": {"sign": person.jupiter.sign, "degree": round(person.jupiter.abs_pos, 2), "house": person.jupiter.house},
-            "Saturn": {"sign": person.saturn.sign, "degree": round(person.saturn.abs_pos, 2), "house": person.saturn.house},
-            "Uranus": {"sign": person.uranus.sign, "degree": round(person.uranus.abs_pos, 2), "house": person.uranus.house},
-            "Neptune": {"sign": person.neptune.sign, "degree": round(person.neptune.abs_pos, 2), "house": person.neptune.house},
-            "Pluto": {"sign": person.pluto.sign, "degree": round(person.pluto.abs_pos, 2), "house": person.pluto.house},
-            "Mean_Node": {"sign": person.mean_node.sign, "degree": round(person.mean_node.abs_pos, 2)},
-        }
-
-        houses = {
-            "Ascendant": person.first_house.sign,
-            "MC": person.tenth_house.sign,
-            # Galima pridėti visus 12 namų, jei nori
+            "Sun": {"sign": person.sun.sign, "degree": round(person.sun.abs_pos, 2), "house": person.sun.house if hasattr(person.sun, 'house') else None},
+            "Moon": {"sign": person.moon.sign, "degree": round(person.moon.abs_pos, 2), "house": person.moon.house if hasattr(person.moon, 'house') else None},
+            "Mercury": {"sign": person.mercury.sign, "degree": round(person.mercury.abs_pos, 2)},
+            "Venus": {"sign": person.venus.sign, "degree": round(person.venus.abs_pos, 2)},
+            "Mars": {"sign": person.mars.sign, "degree": round(person.mars.abs_pos, 2)},
+            "Jupiter": {"sign": person.jupiter.sign, "degree": round(person.jupiter.abs_pos, 2)},
+            "Saturn": {"sign": person.saturn.sign, "degree": round(person.saturn.abs_pos, 2)},
+            "Uranus": {"sign": person.uranus.sign, "degree": round(person.uranus.abs_pos, 2)},
+            "Neptune": {"sign": person.neptune.sign, "degree": round(person.neptune.abs_pos, 2)},
+            "Pluto": {"sign": person.pluto.sign, "degree": round(person.pluto.abs_pos, 2)},
         }
 
         return {
             "sun_sign": person.sun.sign,
             "moon_sign": person.moon.sign,
-            "ascendant": person.first_house.sign,
-            "planets": planets,
-            "houses": houses
+            "ascendant": person.first_house.sign if hasattr(person, 'first_house') else "N/A",
+            "planets": planets
         }
 
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Klaida skaičiuojant: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Klaida skaičiuojant horoskopą: {str(e)}")

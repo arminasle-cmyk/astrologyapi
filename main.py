@@ -4,6 +4,7 @@ from datetime import datetime
 import pytz
 import swisseph as swe
 
+
 swe.set_ephe_path(".")
 
 app = FastAPI()

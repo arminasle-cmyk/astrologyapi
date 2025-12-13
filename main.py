@@ -3,9 +3,6 @@ from pydantic import BaseModel
 
 app = FastAPI()
 
-raise Exception("JEIGU TU TAI MATAI – VYKDOMAS ŠITAS FAILAS")
-
-
 @app.get("/health")
 def health():
     return {

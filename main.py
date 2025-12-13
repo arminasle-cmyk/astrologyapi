@@ -53,3 +53,6 @@ async def calculate(data: BirthData):
         "ascendant": person.first_house.sign,
         "planets": planets
     }
+
+except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Klaida skaičiuojant horoskopą: {str(e)}")

@@ -2,23 +2,23 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 from kerykeion import AstrologicalSubject
 
-app = FastAPI()
+app = FastAPI(title="Astrology API", version="1.0")
 
 class BirthData(BaseModel):
-    date: str  # YYYY-MM-DD
-    time: str  # HH:MM
-    timezone: str = "Europe/Vilnius"
+    date: str      # "1990-05-15"
+    time: str    # "14:30"
     lat: float
     lon: float
+    timezone: str = "Europe/Vilnius"
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "service": "Astrology API", "version": "1.0"}
+    return {"status": "ok", "service": "Astrology API"}
 
 @app.post("/calculate")
 async def calculate(data: BirthData):
-    subject = AstrologicalSubject(
-        name="User",
+    person = AstrologicalSubject(
+        "User",
         year=int(data.date[:4]),
         month=int(data.date[5:7]),
         day=int(data.date[8:10]),
@@ -29,12 +29,9 @@ async def calculate(data: BirthData):
         tz_str=data.timezone
     )
 
-    # Pvz., grąžinam planetų pozicijas
-    planets = {
-        planet.name: {
-            "sign": planet.sign,
-            "position": planet.abs_pos
-        } for planet in subject.planets_list
+    return {
+        "sun": person.sun.sign,
+        "moon": person.moon.sign,
+        "ascendant": person.first_house.sign,
+        "planets": {p.name: p.sign for p in person.planets_list}
     }
-
-    return {"status": "ok", "planets": planets, "houses": subject.houses_list}

@@ -3,6 +3,8 @@ from pydantic import BaseModel
 
 app = FastAPI()
 
+print(">>> STARTUOJA main.py <<<")
+
 @app.get("/health")
 def health():
     return {

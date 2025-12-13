@@ -1,6 +1,6 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from kerykeion import AstrologicalSubject  # jei naudoji kerykeion
+from kerykeion import AstrologicalSubject
 
 app = FastAPI(
     title="Astrology API",
@@ -9,30 +9,27 @@ app = FastAPI(
 )
 
 class BirthData(BaseModel):
-    date: str      # pvz. "1990-05-15"
-    time: str      # pvz. "14:30"
-    lat: float     # pvz. 54.6872 (Vilnius)
-    lon: float     # pvz. 25.2797 (Vilnius)
+    date: str  # pvz. "1990-05-15"
+    time: str  # pvz. "14:30"
+    lat: float  # pvz. 54.6872 (Vilnius)
+    lon: float  # pvz. 25.2797 (Vilnius)
     timezone: str = "Europe/Vilnius"  # pagal nutylėjimą Vilnius
 
-# 1. Pridėk root endpoint'ą – kad pagrindinis URL rodytų kažką gražaus
 @app.get("/")
 async def root():
     return {
         "message": "Sveiki atvykę į Astrology API! 🌟",
-        "docs": "/docs",           # automatiškai sugeneruota interaktyvi dokumentacija
-        "redoc": "/redoc",         # alternatyvi dokumentacija
-        "health": "/health"
+        "docs": "/docs",
+        "redoc": "/redoc",
+        "health": "/health",
+        "calculate": "POST /calculate"
     }
 
-# 2. /health jau turi, palik kaip yra
 @app.get("/health")
 async def health():
     return {"status": "ok", "service": "Astrology API", "version": "1.0"}
 
-# 3. /calculate – įsitikink, kad tikrai yra POST metodas
-@app.post("/calculate")
-@app.post("/calculate")
+@app.post("/calculate")  # TIK VIENAS decorator!
 async def calculate(data: BirthData):
     try:
         person = AstrologicalSubject(
@@ -47,10 +44,10 @@ async def calculate(data: BirthData):
             tz_str=data.timezone
         )
 
-        # Planetos pasiekiamos tiesiogiai kaip atributai (naujausia kerykeion versija)
+        # Tiesioginis planetų pasiekimas (veikia visose naujausiose versijose)
         planets = {
-            "Sun": {"sign": person.sun.sign, "degree": round(person.sun.abs_pos, 2), "house": person.sun.house if hasattr(person.sun, 'house') else None},
-            "Moon": {"sign": person.moon.sign, "degree": round(person.moon.abs_pos, 2), "house": person.moon.house if hasattr(person.moon, 'house') else None},
+            "Sun": {"sign": person.sun.sign, "degree": round(person.sun.abs_pos, 2)},
+            "Moon": {"sign": person.moon.sign, "degree": round(person.moon.abs_pos, 2)},
             "Mercury": {"sign": person.mercury.sign, "degree": round(person.mercury.abs_pos, 2)},
             "Venus": {"sign": person.venus.sign, "degree": round(person.venus.abs_pos, 2)},
             "Mars": {"sign": person.mars.sign, "degree": round(person.mars.abs_pos, 2)},
@@ -64,7 +61,7 @@ async def calculate(data: BirthData):
         return {
             "sun_sign": person.sun.sign,
             "moon_sign": person.moon.sign,
-            "ascendant": person.first_house.sign if hasattr(person, 'first_house') else "N/A",
+            "ascendant": person.first_house.sign,
             "planets": planets
         }
 

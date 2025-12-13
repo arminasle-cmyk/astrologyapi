@@ -11,9 +11,9 @@ app = FastAPI(
 class BirthData(BaseModel):
     date: str  # pvz. "1990-05-15"
     time: str  # pvz. "14:30"
-    lat: float  # pvz. 54.6872 (Vilnius)
-    lon: float  # pvz. 25.2797 (Vilnius)
-    timezone: str = "Europe/Vilnius"  # pagal nutylėjimą Vilnius
+    lat: float
+    lon: float
+    timezone: str = "Europe/Vilnius"
 
 @app.get("/")
 async def root():
@@ -22,14 +22,14 @@ async def root():
         "docs": "/docs",
         "redoc": "/redoc",
         "health": "/health",
-        "calculate": "POST /calculate"
+        "calculate": "POST /calculate su JSON duomenimis"
     }
 
 @app.get("/health")
 async def health():
     return {"status": "ok", "service": "Astrology API", "version": "1.0"}
 
-@app.post("/calculate")  # TIK VIENAS decorator!
+@app.post("/calculate")
 async def calculate(data: BirthData):
     try:
         person = AstrologicalSubject(
@@ -44,7 +44,7 @@ async def calculate(data: BirthData):
             tz_str=data.timezone
         )
 
-        # Tiesioginis planetų pasiekimas (veikia visose naujausiose versijose)
+        # Planetos pasiekiamos tiesiogiai (be planets_list!)
         planets = {
             "Sun": {"sign": person.sun.sign, "degree": round(person.sun.abs_pos, 2)},
             "Moon": {"sign": person.moon.sign, "degree": round(person.moon.abs_pos, 2)},

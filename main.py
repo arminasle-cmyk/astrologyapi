@@ -2,10 +2,11 @@ from fastapi import FastAPI
 
 app = FastAPI()
 
-@app.get("/")
-def root():
-    return {"status": "OK"}
 
-@app.get("/docs-test")
-def docs_test():
-    return {"docs": "should work"}
+@app.get("/health")
+def health():
+    return {
+        "status": "OK",
+        "service": "Astrology API",
+        "version": "1.0"
+    }

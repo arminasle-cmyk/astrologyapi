@@ -38,23 +38,24 @@ async def calculate(data: BirthData):
             tz_str=data.timezone
         )
 
+        # Planetų vardai pagal kerykeion
+        planet_names = [
+            "sun", "moon", "mercury", "venus", "mars",
+            "jupiter", "saturn", "uranus", "neptune", "pluto"
+        ]
+
         planets = {
-            "Sun": {"sign": person.sun.sign, "degree": round(person.sun.abs_pos, 2)},
-            "Moon": {"sign": person.moon.sign, "degree": round(person.moon.abs_pos, 2)},
-            "Mercury": {"sign": person.mercury.sign, "degree": round(person.mercury.abs_pos, 2)},
-            "Venus": {"sign": person.venus.sign, "degree": round(person.venus.abs_pos, 2)},
-            "Mars": {"sign": person.mars.sign, "degree": round(person.mars.abs_pos, 2)},
-            "Jupiter": {"sign": person.jupiter.sign, "degree": round(person.jupiter.abs_pos, 2)},
-            "Saturn": {"sign": person.saturn.sign, "degree": round(person.saturn.abs_pos, 2)},
-            "Uranus": {"sign": person.uranus.sign, "degree": round(person.uranus.abs_pos, 2)},
-            "Neptune": {"sign": person.neptune.sign, "degree": round(person.neptune.abs_pos, 2)},
-            "Pluto": {"sign": person.pluto.sign, "degree": round(person.pluto.abs_pos, 2)},
+            name.capitalize(): {
+                "sign": getattr(person, name).sign,
+                "degree": round(getattr(person, name).abs_pos, 2)
+            }
+            for name in planet_names
         }
 
         return {
             "sun_sign": person.sun.sign,
             "moon_sign": person.moon.sign,
-            "ascendant": person.first_house.sign,
+            "ascendant": getattr(person.first_house, "sign", "Nežinomas"),
             "planets": planets
         }
 

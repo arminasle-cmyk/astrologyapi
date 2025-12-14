@@ -5,7 +5,7 @@ from kerykeion import AstrologicalSubject
 app = FastAPI(
     title="Astrology API",
     description="Natal chart ir planetų pozicijų skaičiavimas",
-    version="1.0"
+    version="1.1"
 )
 
 class BirthData(BaseModel):
@@ -21,7 +21,7 @@ async def root():
 
 @app.get("/health")
 async def health():
-    return {"status": "ok", "version": "1.0"}
+    return {"status": "ok", "version": "1.1"}
 
 @app.post("/calculate")
 async def calculate(data: BirthData):
@@ -38,7 +38,7 @@ async def calculate(data: BirthData):
             tz_str=data.timezone
         )
 
-        # Planetų vardai pagal kerykeion
+        # Planetos su house info
         planet_names = [
             "sun", "moon", "mercury", "venus", "mars",
             "jupiter", "saturn", "uranus", "neptune", "pluto"
@@ -46,17 +46,29 @@ async def calculate(data: BirthData):
 
         planets = {
             name.capitalize(): {
-                "sign": getattr(person, name).sign,
-                "degree": round(getattr(person, name).abs_pos, 2)
+                "sign": planet.sign,
+                "degree": round(planet.abs_pos, 2),
+                "house": planet.house
             }
             for name in planet_names
+            if (planet := getattr(person, name))
+        }
+
+        # Astrologiniai namai
+        houses = {
+            house.name: {
+                "sign": house.sign,
+                "degree": round(house.abs_pos, 2)
+            }
+            for house in person.houses_list
         }
 
         return {
             "sun_sign": person.sun.sign,
             "moon_sign": person.moon.sign,
             "ascendant": getattr(person.first_house, "sign", "Nežinomas"),
-            "planets": planets
+            "planets": planets,
+            "houses": houses
         }
 
     except Exception as e:

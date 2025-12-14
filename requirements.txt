@@ -1,4 +1,4 @@
 fastapi
 hypercorn
-kerykeion
+git+https://github.com/PejmanNik/kerykeion.git
 pydantic

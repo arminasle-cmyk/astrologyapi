@@ -1,6 +1,6 @@
 fastapi
 uvicorn
-flatlib
+flatlib>=0.3.0
 pydantic
 hypercorn
 timezonefinder

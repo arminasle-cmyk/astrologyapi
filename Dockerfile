@@ -6,7 +6,8 @@ WORKDIR /app
 COPY . /app
 
 RUN pip install --upgrade pip && \
-    pip install git+https://github.com/flatlib-org/flatlib.git@object-house-support && \
+    pip install https://github.com/hhershey93/flatlib/archive/refs/heads/master.tar.gz && \
     pip install -r requirements.txt
 
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]
+

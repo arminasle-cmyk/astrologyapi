@@ -4,4 +4,4 @@ flatlib
 pydantic
 hypercorn
 timezonefinder
-plytz
+pytz

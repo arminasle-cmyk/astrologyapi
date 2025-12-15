@@ -1,6 +1,11 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from kerykeion import AstrologicalSubject
+from flatlib.chart import Chart
+from flatlib.datetime import Datetime
+from flatlib.geopos import GeoPos
+from flatlib.const import PLANETS, HOUSES
+from zoneinfo import ZoneInfo
+from datetime import datetime as dt
 
 app = FastAPI(
     title="Astrology API",
@@ -13,7 +18,7 @@ class BirthData(BaseModel):
     time: str  # "HH:MM"
     lat: float
     lon: float
-    timezone: str = "Europe/Vilnius"
+    timezone: str = "Europe/Vilnius"  # Vartotojas nurodo laiko juostą pagal pavadinimą
 
 @app.get("/")
 async def root():
@@ -26,47 +31,40 @@ async def health():
 @app.post("/calculate")
 async def calculate(data: BirthData):
     try:
-        person = AstrologicalSubject(
-            "User",
-            year=int(data.date[:4]),
-            month=int(data.date[5:7]),
-            day=int(data.date[8:10]),
-            hour=int(data.time[:2]),
-            minute=int(data.time[3:5]),
-            lat=data.lat,
-            lng=data.lon,
-            tz_str=data.timezone
-        )
+        # Konvertuojame laiko juostą į UTC offset
+        tzinfo = ZoneInfo(data.timezone)
+        local_dt = dt.strptime(f"{data.date} {data.time}", "%Y-%m-%d %H:%M").replace(tzinfo=tzinfo)
+        utc_offset = local_dt.utcoffset()
+        offset_hours = int(utc_offset.total_seconds() // 3600)
+        offset_minutes = int((utc_offset.total_seconds() % 3600) // 60)
+        offset_str = f"{offset_hours:+03d}:{abs(offset_minutes):02d}"
 
-        # Planetos su house info
-        planet_names = [
-            "sun", "moon", "mercury", "venus", "mars",
-            "jupiter", "saturn", "uranus", "neptune", "pluto"
-        ]
+        # Flatlib datoms
+        dt_flat = Datetime(data.date, data.time, offset_str)
+        pos = GeoPos(str(data.lat), str(data.lon))
+        chart = Chart(dt_flat, pos)
 
-        planets = {
-            name.capitalize(): {
+        planets = {}
+        for name in PLANETS:
+            planet = chart.get(name)
+            planets[name] = {
                 "sign": planet.sign,
-                "degree": round(planet.abs_pos, 2),
+                "degree": round(float(planet.lon), 2),
                 "house": planet.house
             }
-            for name in planet_names
-            if (planet := getattr(person, name))
-        }
 
-        # Astrologiniai namai
-        houses = {
-            house.name: {
+        houses = {}
+        for house_name in HOUSES:
+            house = chart.get(house_name)
+            houses[house_name] = {
                 "sign": house.sign,
-                "degree": round(house.abs_pos, 2)
+                "degree": round(float(house.lon), 2)
             }
-            for house in person.houses_list
-        }
 
         return {
-            "sun_sign": person.sun.sign,
-            "moon_sign": person.moon.sign,
-            "ascendant": getattr(person.first_house, "sign", "Nežinomas"),
+            "sun_sign": chart.get('SUN').sign,
+            "moon_sign": chart.get('MOON').sign,
+            "ascendant": chart.get('ASC').sign,
             "planets": planets,
             "houses": houses
         }

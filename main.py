@@ -20,7 +20,6 @@ class BirthData(BaseModel):
     lat: float
     lon: float
 
-
 PLANETS = [
     const.SUN,
     const.MOON,
@@ -34,21 +33,18 @@ PLANETS = [
     const.PLUTO,
 ]
 
-
 @app.get("/")
 async def root():
-    return {"message": "Astrology API veikia! 🌟 Naudok /docs testavimui."}
-
+    return {"message": "Astrology API veikia! ✨ Naudok /docs testavimui."}
 
 @app.get("/health")
 async def health():
     return {"status": "ok", "version": "1.3"}
 
-
 @app.post("/calculate")
 async def calculate(data: BirthData):
     try:
-        # 1️⃣ Timezone pagal koordinates
+        # 1⃣ Timezone pagal koordinates
         tf = TimezoneFinder()
         tz_str = tf.timezone_at(lat=data.lat, lng=data.lon)
         if not tz_str:
@@ -57,7 +53,7 @@ async def calculate(data: BirthData):
                 detail="Nepavyko nustatyti laiko zonos pagal koordinates"
             )
 
-        # 2️⃣ Lokalų laiką → UTC
+        # 2⃣ Lokalų laiką → UTC
         local_tz = pytz.timezone(tz_str)
         naive_dt = dt.strptime(
             f"{data.date} {data.time}",
@@ -66,26 +62,27 @@ async def calculate(data: BirthData):
         local_dt = local_tz.localize(naive_dt)
         utc_dt = local_dt.astimezone(pytz.utc)
 
-        # 3️⃣ Flatlib Chart (Placidus – DEFAULT)
+        # 3⃣ Flatlib Chart (Placidus)
         date_obj = Datetime(
             utc_dt.strftime("%Y/%m/%d"),
             utc_dt.strftime("%H:%M"),
             "+00:00"
         )
         pos = GeoPos(data.lat, data.lon)
-        chart = Chart(date_obj, pos)  # <-- be hsys, default = Placidus
+        chart = Chart(date_obj, pos)
 
-        # 4️⃣ Planetos
+        # 4⃣ Planetos
         planets = {}
         for pid in PLANETS:
             p = chart.get(pid)
+            house = getattr(p, "house", None)
             planets[p.id] = {
                 "sign": p.sign,
                 "degree": round(p.lon, 2),
-                "house": p.house
+                "house": house
             }
 
-        # 5️⃣ Namai (VIENINTELIS TEISINGAS BŪDAS)
+        # 5⃣ Namai
         houses = {
             hid: {
                 "sign": h.sign,

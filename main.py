@@ -41,34 +41,24 @@ async def health():
 @app.post("/calculate")
 async def calculate(data: BirthData):
     try:
-        # 1️⃣ Timezone
+        # 1️⃣ Laiko zona
         tf = TimezoneFinder()
         tz_str = tf.timezone_at(lat=data.lat, lng=data.lon)
         if not tz_str:
-            raise HTTPException(
-                status_code=400,
-                detail="Nepavyko nustatyti laiko zonos pagal koordinates"
-            )
+            raise HTTPException(status_code=400, detail="Nepavyko nustatyti laiko zonos pagal koordinates")
 
         # 2️⃣ Lokalų laiką → UTC
         local_tz = pytz.timezone(tz_str)
-        naive_dt = dt.strptime(
-            f"{data.date} {data.time}",
-            "%Y-%m-%d %H:%M"
-        )
+        naive_dt = dt.strptime(f"{data.date} {data.time}", "%Y-%m-%d %H:%M")
         local_dt = local_tz.localize(naive_dt)
         utc_dt = local_dt.astimezone(pytz.utc)
 
-        # 3️⃣ Chart
-        date_obj = Datetime(
-            utc_dt.strftime("%Y/%m/%d"),
-            utc_dt.strftime("%H:%M"),
-            "+00:00"
-        )
+        # 3️⃣ Sudaromas horoskopas
+        date_obj = Datetime(utc_dt.strftime("%Y/%m/%d"), utc_dt.strftime("%H:%M"), "+00:00")
         pos = GeoPos(data.lat, data.lon)
         chart = Chart(date_obj, pos)
 
-        # 4️⃣ Namai
+        # 4️⃣ Namai kaip žemėlapis
         houses = {
             h.id: {
                 "sign": h.sign,
@@ -77,26 +67,37 @@ async def calculate(data: BirthData):
             for h in chart.houses
         }
 
-        # 5️⃣ Planetos su TIKSLIAI nustatytu namu
+        # 5️⃣ Namų sąrašas (rikiuojame pagal ilgumą)
+        house_list = sorted(chart.houses, key=lambda h: h.lon)
+
+        # 6️⃣ Funkcija planetos namui nustatyti (360° logika)
+        def get_house_by_lon(lon, house_list):
+            for i in range(len(house_list)):
+                start = house_list[i].lon
+                end = house_list[(i + 1) % 12].lon
+                if start < end:
+                    if start <= lon < end:
+                        return i + 1
+                else:  # pereina per 360°
+                    if lon >= start or lon < end:
+                        return i + 1
+            return None
+
+        # 7️⃣ Planetų analizė
         planets = {}
         for pid in PLANETS:
             p = chart.get(pid)
-
-            house_number = None
-            for i, h in enumerate(chart.houses, start=1):
-                if h.inHouse(p.lon):
-                    house_number = i
-                    break
-
+            house_number = get_house_by_lon(p.lon, house_list)
             planets[p.id] = {
                 "sign": p.sign,
                 "degree": round(p.lon, 2),
                 "house": house_number
             }
 
-        # 6️⃣ Ascendant
+        # 8️⃣ ASC
         asc = chart.get(const.ASC)
 
+        # 9️⃣ Atsakymas
         return {
             "sun_sign": chart.get(const.SUN).sign,
             "moon_sign": chart.get(const.MOON).sign,
@@ -111,7 +112,4 @@ async def calculate(data: BirthData):
 
     except Exception as e:
         print(f"[Klaida]: {e}")
-        raise HTTPException(
-            status_code=400,
-            detail=f"Klaida skaičiuojant: {str(e)}"
-        )
+        raise HTTPException(status_code=400, detail=f"Klaida skaičiuojant: {str(e)}")

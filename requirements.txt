@@ -1,4 +1,4 @@
 fastapi
-hypercorn
-git+https://github.com/open-astro/kerykeion.git
+uvicorn
+flatlib
 pydantic

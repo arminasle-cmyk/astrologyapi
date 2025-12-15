@@ -67,15 +67,17 @@ async def calculate(data: BirthData):
             for h in chart.houses
         }
 
-        planets = {}
-        for pid in PLANETS:
-            p = chart.get(pid)
-            house_number = int(p.house) if hasattr(p, "house") and p.house else None
-            planets[p.id] = {
-                "sign": p.sign,
-                "degree": round(p.lon, 2),
-                "house": house_number
-            }
+planets = {}
+for pid in PLANETS:
+    # Surandame planetą su pilnu kontekstu (iš chart.objects)
+    p = next((obj for obj in chart.objects if obj.id == pid), None)
+    if p:
+        house_number = int(p.house) if p.house else None
+        planets[p.id] = {
+            "sign": p.sign,
+            "degree": round(p.lon, 2),
+            "house": house_number
+        }
 
         asc = chart.get(const.ASC)
 

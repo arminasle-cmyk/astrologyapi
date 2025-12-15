@@ -70,7 +70,7 @@ async def calculate(data: BirthData):
         planets = {}
         for pid in PLANETS:
             p = chart.get(pid)
-            house_number = int(p.house) if p.house else None
+            house_number = int(p.house) if hasattr(p, "house") and p.house else None
             planets[p.id] = {
                 "sign": p.sign,
                 "degree": round(p.lon, 2),

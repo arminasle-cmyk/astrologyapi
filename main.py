@@ -22,7 +22,7 @@ class BirthData(BaseModel):
 
 @app.get("/")
 async def root():
-    return {"message": "Astrology API veikia! 🌟 Naudok /docs testavimui. Bandymas"}
+    return {"message": "Astrology API veikia! 🌟 Naudok /docs testavimui..."}
 
 @app.get("/health")
 async def health():

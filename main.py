@@ -42,16 +42,22 @@ async def health():
 @app.post("/calculate")
 async def calculate(data: BirthData):
     try:
+        # 1️⃣ Timezone
         tf = TimezoneFinder()
         tz_str = tf.timezone_at(lat=data.lat, lng=data.lon)
         if not tz_str:
-            raise HTTPException(status_code=400, detail="Nepavyko nustatyti laiko zonos pagal koordinates")
+            raise HTTPException(
+                status_code=400,
+                detail="Nepavyko nustatyti laiko zonos pagal koordinates"
+            )
 
+        # 2️⃣ Lokalų laiką → UTC
         local_tz = pytz.timezone(tz_str)
         naive_dt = dt.strptime(f"{data.date} {data.time}", "%Y-%m-%d %H:%M")
         local_dt = local_tz.localize(naive_dt)
         utc_dt = local_dt.astimezone(pytz.utc)
 
+        # 3️⃣ Flatlib chart
         date_obj = Datetime(
             utc_dt.strftime("%Y/%m/%d"),
             utc_dt.strftime("%H:%M"),
@@ -60,39 +66,27 @@ async def calculate(data: BirthData):
         pos = GeoPos(data.lat, data.lon)
         chart = Chart(date_obj, pos)
 
-        # Namai → sąrašas su laipsniais
-        house_list = sorted(chart.houses, key=lambda h: h.lon)
-        houses = {}
-        for h in chart.houses:
-            houses[h.id] = {
+        # 4️⃣ Namai
+        houses = {
+            h.id: {
                 "sign": h.sign,
                 "degree": round(h.lon, 2)
             }
+            for h in chart.houses
+        }
 
-        # Funkcija planetos namui nustatyti
-        def get_house_by_lon(lon):
-            for i in range(len(house_list)):
-                start = house_list[i].lon
-                end = house_list[(i + 1) % 12].lon
-                if start < end:
-                    if start <= lon < end:
-                        return i + 1
-                else:  # pereinam per 360 -> 0 ribą
-                    if lon >= start or lon < end:
-                        return i + 1
-            return None  # saugumo sumetimais
-
-        # Planetos su apskaičiuotu namu
+        # 5️⃣ Planetos su TIKSLIU namu (flatlib metodas)
         planets = {}
         for pid in PLANETS:
             p = chart.get(pid)
-            house_number = get_house_by_lon(p.lon)
+            house_number = chart.getObjectHouse(p)
             planets[p.id] = {
                 "sign": p.sign,
                 "degree": round(p.lon, 2),
                 "house": house_number
             }
 
+        # 6️⃣ Ascendant
         asc = chart.get(const.ASC)
 
         return {
@@ -109,4 +103,7 @@ async def calculate(data: BirthData):
 
     except Exception as e:
         print(f"[Klaida]: {e}")
-        raise HTTPException(status_code=400, detail=f"Klaida skaičiuojant: {str(e)}")
+        raise HTTPException(
+            status_code=400,
+            detail=f"Klaida skaičiuojant: {str(e)}"
+        )

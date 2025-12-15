@@ -56,7 +56,7 @@ async def calculate(data: BirthData):
 
         # Sukurti astrologinį grafiką
         date_obj = Datetime(utc_dt.strftime("%Y/%m/%d"), utc_dt.strftime("%H:%M"), "+00:00")
-        pos = GeoPos(str(data.lat), str(data.lon))
+        pos = GeoPos(data.lat, data.lon)
         chart = Chart(date_obj, pos, hsys=const.PLACIDUS)
 
         # Planetų duomenys

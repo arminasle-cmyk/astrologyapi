@@ -69,16 +69,22 @@ async def calculate(data: BirthData):
         }
 
         # Planetos su priskirtu namu (naudojant chart.objects)
-        planets = {}
-        for pid in PLANETS:
-            p = next((obj for obj in chart.objects if obj.id == pid), None)
-            if p:
-                house_number = int(p.house) if p.house else None
-                planets[p.id] = {
-                    "sign": p.sign,
-                    "degree": round(p.lon, 2),
-                    "house": house_number
-                }
+# Planetos su TIKSLIAI nustatytu namu (flatlib 0.2.3 suderinama)
+planets = {}
+for pid in PLANETS:
+    p = chart.get(pid)
+
+    house_number = None
+    for i, h in enumerate(chart.houses, start=1):
+        if h.inHouse(p.lon):
+            house_number = i
+            break
+
+    planets[p.id] = {
+        "sign": p.sign,
+        "degree": round(p.lon, 2),
+        "house": house_number
+    }
 
         # Ascendant
         asc = chart.get(const.ASC)

@@ -20,6 +20,7 @@ class BirthData(BaseModel):
     lat: float
     lon: float
 
+# Tik tradicinės planetos (flatlib palaikomos)
 PLANETS = [
     const.SUN,
     const.MOON,
@@ -28,9 +29,6 @@ PLANETS = [
     const.MARS,
     const.JUPITER,
     const.SATURN,
-    const.URANUS,
-    const.NEPTUNE,
-    const.PLUTO,
 ]
 
 @app.get("/")
@@ -44,7 +42,7 @@ async def health():
 @app.post("/calculate")
 async def calculate(data: BirthData):
     try:
-        # 1⃣ Timezone pagal koordinates
+        # 1⃣ Nustatome laiko zoną pagal koordinates
         tf = TimezoneFinder()
         tz_str = tf.timezone_at(lat=data.lat, lng=data.lon)
         if not tz_str:
@@ -53,16 +51,13 @@ async def calculate(data: BirthData):
                 detail="Nepavyko nustatyti laiko zonos pagal koordinates"
             )
 
-        # 2⃣ Lokalų laiką → UTC
+        # 2⃣ Konvertuojame lokalų laiką į UTC
         local_tz = pytz.timezone(tz_str)
-        naive_dt = dt.strptime(
-            f"{data.date} {data.time}",
-            "%Y-%m-%d %H:%M"
-        )
+        naive_dt = dt.strptime(f"{data.date} {data.time}", "%Y-%m-%d %H:%M")
         local_dt = local_tz.localize(naive_dt)
         utc_dt = local_dt.astimezone(pytz.utc)
 
-        # 3⃣ Flatlib Chart (Placidus)
+        # 3⃣ Kuriame gimimo lentelę (chart) su flatlib
         date_obj = Datetime(
             utc_dt.strftime("%Y/%m/%d"),
             utc_dt.strftime("%H:%M"),
@@ -71,7 +66,7 @@ async def calculate(data: BirthData):
         pos = GeoPos(data.lat, data.lon)
         chart = Chart(date_obj, pos)
 
-        # 4⃣ Planetos
+        # 4⃣ Planetų pozicijos
         planets = {}
         for pid in PLANETS:
             p = chart.get(pid)
@@ -82,25 +77,32 @@ async def calculate(data: BirthData):
                 "house": house
             }
 
-        # 5⃣ Namai
+        # 5⃣ Namų pozicijos
         houses = {
-            hid: {
+            h.id: {
                 "sign": h.sign,
                 "degree": round(h.lon, 2)
             }
-            for hid, h in chart.houses.items()
+            for h in chart.houses
         }
+
+        # 6⃣ Ascendant
+        asc = chart.get(const.ASC)
 
         return {
             "sun_sign": chart.get(const.SUN).sign,
             "moon_sign": chart.get(const.MOON).sign,
-            "ascendant": chart.get(const.ASC).sign,
+            "ascendant": {
+                "sign": asc.sign,
+                "degree": round(asc.lon, 2)
+            },
             "timezone": tz_str,
             "planets": planets,
             "houses": houses
         }
 
     except Exception as e:
+        print(f"[Klaida]: {e}")  # Debugas (galite pašalinti)
         raise HTTPException(
             status_code=400,
             detail=f"Klaida skaičiuojant: {str(e)}"

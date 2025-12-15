@@ -11,7 +11,7 @@ import pytz
 app = FastAPI(
     title="Astrology API",
     description="Natal chart ir planetų bei namų pozicijų skaičiavimas",
-    version="1.2"
+    version="1.3"
 )
 
 class BirthData(BaseModel):
@@ -20,62 +20,78 @@ class BirthData(BaseModel):
     lat: float
     lon: float
 
+
 PLANETS = [
-    const.SUN, const.MOON, const.MERCURY, const.VENUS, const.MARS,
-    const.JUPITER, const.SATURN, const.URANUS, const.NEPTUNE, const.PLUTO
+    const.SUN,
+    const.MOON,
+    const.MERCURY,
+    const.VENUS,
+    const.MARS,
+    const.JUPITER,
+    const.SATURN,
+    const.URANUS,
+    const.NEPTUNE,
+    const.PLUTO,
 ]
 
-HOUSES = [
-    const.HOUSE1, const.HOUSE2, const.HOUSE3, const.HOUSE4, const.HOUSE5,
-    const.HOUSE6, const.HOUSE7, const.HOUSE8, const.HOUSE9, const.HOUSE10,
-    const.HOUSE11, const.HOUSE12
-]
 
 @app.get("/")
 async def root():
     return {"message": "Astrology API veikia! 🌟 Naudok /docs testavimui."}
 
+
 @app.get("/health")
 async def health():
-    return {"status": "ok", "version": "1.2"}
+    return {"status": "ok", "version": "1.3"}
+
 
 @app.post("/calculate")
 async def calculate(data: BirthData):
     try:
-        # Nustatyti laiko zoną pagal koordinates
+        # 1️⃣ Timezone pagal koordinates
         tf = TimezoneFinder()
         tz_str = tf.timezone_at(lat=data.lat, lng=data.lon)
         if not tz_str:
-            raise HTTPException(status_code=400, detail="Nepavyko nustatyti laiko zonos pagal koordinates")
+            raise HTTPException(
+                status_code=400,
+                detail="Nepavyko nustatyti laiko zonos pagal koordinates"
+            )
 
-        # Konvertuoti laiką į UTC
+        # 2️⃣ Lokalų laiką → UTC
         local_tz = pytz.timezone(tz_str)
-        naive_dt = dt.strptime(f"{data.date} {data.time}", "%Y-%m-%d %H:%M")
+        naive_dt = dt.strptime(
+            f"{data.date} {data.time}",
+            "%Y-%m-%d %H:%M"
+        )
         local_dt = local_tz.localize(naive_dt)
         utc_dt = local_dt.astimezone(pytz.utc)
 
-        # Sukurti astrologinį grafiką
-        date_obj = Datetime(utc_dt.strftime("%Y/%m/%d"), utc_dt.strftime("%H:%M"), "+00:00")
+        # 3️⃣ Flatlib Chart (Placidus – DEFAULT)
+        date_obj = Datetime(
+            utc_dt.strftime("%Y/%m/%d"),
+            utc_dt.strftime("%H:%M"),
+            "+00:00"
+        )
         pos = GeoPos(data.lat, data.lon)
-        chart = Chart(date_obj, pos, hsys=const.HOUSES_PLACIDUS)
+        chart = Chart(date_obj, pos)  # <-- be hsys, default = Placidus
 
-        # Planetų duomenys
-        planets = {
-            obj.id: {
-                "sign": obj.sign,
-                "degree": round(obj.lon, 2),
-                "house": obj.house
+        # 4️⃣ Planetos
+        planets = {}
+        for pid in PLANETS:
+            p = chart.get(pid)
+            planets[p.id] = {
+                "sign": p.sign,
+                "degree": round(p.lon, 2),
+                "house": p.house
             }
-            for obj in [chart.get(p) for p in PLANETS]
-        }
 
-        # Namų duomenys
+        # 5️⃣ Namai (VIENINTELIS TEISINGAS BŪDAS)
         houses = {
-            house: {
-                "sign": chart.houses.get(house).sign,
-                "degree": round(chart.houses.get(house).lon, 2)
+            hid: {
+                "sign": h.sign,
+                "degree": round(h.lon, 2)
             }
-            for house in HOUSES
+            for hid, h in chart.houses.items()
         }
 
         return {
@@ -88,4 +104,7 @@ async def calculate(data: BirthData):
         }
 
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Klaida skaičiuojant: {str(e)}")
+        raise HTTPException(
+            status_code=400,
+            detail=f"Klaida skaičiuojant: {str(e)}"
+        )

@@ -59,6 +59,7 @@ async def calculate(data: BirthData):
         pos = GeoPos(data.lat, data.lon)
         chart = Chart(date_obj, pos)
 
+        # Surenkame namus
         houses = {
             h.id: {
                 "sign": h.sign,
@@ -67,18 +68,19 @@ async def calculate(data: BirthData):
             for h in chart.houses
         }
 
-planets = {}
-for pid in PLANETS:
-    # Surandame planetą su pilnu kontekstu (iš chart.objects)
-    p = next((obj for obj in chart.objects if obj.id == pid), None)
-    if p:
-        house_number = int(p.house) if p.house else None
-        planets[p.id] = {
-            "sign": p.sign,
-            "degree": round(p.lon, 2),
-            "house": house_number
-        }
+        # Planetos su priskirtu namu (naudojant chart.objects)
+        planets = {}
+        for pid in PLANETS:
+            p = next((obj for obj in chart.objects if obj.id == pid), None)
+            if p:
+                house_number = int(p.house) if p.house else None
+                planets[p.id] = {
+                    "sign": p.sign,
+                    "degree": round(p.lon, 2),
+                    "house": house_number
+                }
 
+        # Ascendant
         asc = chart.get(const.ASC)
 
         return {
